@@ -55,7 +55,7 @@ total_movies = count_movies(BASE_DIR)
 movies_to_process = []
 
 # First Pass: Scan and Collect Movies
-print("\\033[94mFirst pass:\\033[0m Scanning for movies to process...", flush=True)
+print("\033[94mFirst pass:\033[0m Scanning for movies to process...\n", flush=True)
 CURRENT_MOVIE = 0
 for subdir, dirs, files in os.walk(BASE_DIR):
     for file in files:
@@ -100,10 +100,10 @@ print(f"Found {len(movies_to_process)} movies to process.", flush=True)
 
 # Skip the second pass if TEST_ENV is True
 if TEST_ENV:
-    print("\\033[93mSkipping the second pass due to the test vairable being true.\\033[0m", flush=True)
+    print("\033[93mSkipping the second pass due to the test vairable being true.\033[0m", flush=True)
 else:
     # Second Pass: Process the Collected Movies
-    print("Second pass:\\033[94m Processing movies...\\033[0m", flush=True)
+    print("Second pass:\033[94m Processing movies...\033[0m", flush=True)
     CURRENT_MOVIE = 0
 
     start_time = time.time()  # Start the timer
