@@ -32,7 +32,7 @@ TOTAL_MOVIES = count_movies_to_process()
 
 # Check if test is True, if so, print the count and exit
 if TEST_ENV:
-    print(f"Total movies to be processed: {TOTAL_MOVIES}")
+    print(f"Total movies to be processed: {TOTAL_MOVIES}", flush=True)
 else:
     MOVIE_COUNT = 0  # Initialize movie counter
     for path, _, file_list in os.walk(BASE_DIR):
