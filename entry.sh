@@ -26,7 +26,7 @@ fi
 if [[ "$REMOVE_LANGUAGES_ENV" =~ ^(True|true|TRUE)$ ]]; then
     # Run the Remove_Languages Python script
     printf "\033[1;33mINFO: Removing Languages\n\n\033[0m"
-    python3 Remove_Languages.py || printf "\033[0;32mPython script failed with exit code $?\033[0m\n"
+    python3 remove_languages.py || printf "\033[0;32mPython script failed with exit code $?\033[0m\n"
 else
     # If REMOVE_LANGUAGES is not 'True', skip running the script and print a message
     printf "\033[0;33mREMOVE_LANGUAGES environment variable is set to 'False', skipping Remove_Languages.py script execution.\033[0m\n"

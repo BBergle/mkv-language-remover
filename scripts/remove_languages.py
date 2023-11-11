@@ -1,66 +1,71 @@
+"""
+This script removes audio and subtitle tracks in specified languages from MKV files.
+It walks through a directory of movies, checks each MKV file, 
+and removes tracks based on the configured exclusions.
+"""
+# pylint: disable=redefined-outer-name
+# pylint: disable=too-many-locals
 import os
 import subprocess
-import orjson
 import time
 
-# Set the base directory to the movies folder
-base_dir = "/movies"
+try:
+    import orjson
+except ImportError:
+    import json as orjson
 
-# Fetch the excluded languages from the environment variable
-excluded_languages_env = os.getenv("LANGUAGES", "")
-# Split the string by commas and remove any surrounding whitespace
-excluded_languages = [
-    lang.strip() for lang in excluded_languages_env.split(",") if lang.strip()
-]
+# Constants
+BASE_DIR = "/movies"
+EXCLUDED_LANGUAGES_ENV = os.getenv("LANGUAGES", "")
+REMOVE_COMMENTARY_ENV = os.getenv("REMOVE_COMMENTARY", "False")
 
-# Fetch the remove commentary tracks option from the environment variable
-remove_commentary_env = os.getenv("REMOVE_COMMENTARY", "False")
-# Convert the string to a Python boolean
-remove_commentary = remove_commentary_env.lower() == "true"
+# Process environment variables
+excluded_languages = [lang.strip() for lang in EXCLUDED_LANGUAGES_ENV.split(",") if lang.strip()]
+remove_commentary = REMOVE_COMMENTARY_ENV.lower() == "true"
 
-# Print out the settings
+# Output settings
 print(f"Excluded languages: {', '.join(excluded_languages)}\n", flush=True)
 print(f"Remove commentary tracks: {remove_commentary}\n", flush=True)
 
 
-def get_exclusion_track_ids(data, excluded_languages, remove_commentary):
+def get_exclusion_track_ids(data, languages, commentary):
+    """
+    Identify track IDs for exclusion based on language and commentary settings.
+
+    :param data: MKV file metadata.
+    :param languages: List of languages to exclude.
+    :param commentary: Boolean indicating whether to remove commentary tracks.
+    :return: Dict with audio and subtitle track IDs to exclude.
+    """
     exclusion_ids = {"audio": [], "subtitles": []}
     audio_track_languages = {}
     subtitle_track_languages = {}
 
-    # Collect all audio and subtitle track languages
     for track in data.get("tracks", []):
-        track_type = track["type"]
-        track_id = str(track["id"])
+        track_id, track_type = str(track["id"]), track["type"]
         track_language = track["properties"].get("language", "").lower()
         track_name = track["properties"].get("track_name", "").lower()
 
+
         if track_type == "audio":
             audio_track_languages[track_id] = track_language
-            if remove_commentary and "commentary" in track_name:
+            if commentary and "commentary" in track_name:
                 exclusion_ids[track_type].append(track_id)
-            elif track_language in excluded_languages:
+            elif track_language in languages:
                 exclusion_ids[track_type].append(track_id)
-
         elif track_type == "subtitles":
             subtitle_track_languages[track_id] = track_language
-            if track_language in excluded_languages:
+            if track_language in languages:
                 exclusion_ids[track_type].append(track_id)
 
-    # Do not exclude subtitles if their corresponding audio track doesn't exist
     for sub_id, sub_lang in subtitle_track_languages.items():
-        if sub_lang in excluded_languages:
-            # If there is no audio track in the same language, remove from exclusion list
-            if sub_lang not in audio_track_languages.values():
-                exclusion_ids["subtitles"].remove(sub_id)
+        if sub_lang in languages and sub_lang not in audio_track_languages.values():
+            exclusion_ids["subtitles"].remove(sub_id)
 
-    # Check if the only audio language is in the exclusion list
     unique_audio_languages = set(audio_track_languages.values())
     if len(unique_audio_languages) == 1:
-        # Get the only language
         only_language = next(iter(unique_audio_languages))
-        if only_language in excluded_languages:
-            # If the only audio language is in the exclusion list, do not exclude it
+        if only_language in languages:
             for track_id, language in audio_track_languages.items():
                 if language == only_language:
                     exclusion_ids["audio"].remove(track_id)
@@ -79,28 +84,28 @@ def count_movies(directory, extension=".mkv"):
 
 
 # Count the total number of movies
-total_movies = count_movies(base_dir)
-current_movie = 0
+total_movies = count_movies(BASE_DIR)
+CURRENT_MOVIE = 0
 
 start_time = time.time()  # Start the timer
 
 print("Script started, looking for MKV files...", flush=True)
 
-for subdir, dirs, files in os.walk(base_dir):
+for subdir, dirs, files in os.walk(BASE_DIR):
     for file in files:
         if file.endswith(".mkv"):
-            current_movie += 1
+            CURRENT_MOVIE += 1
             filepath = os.path.join(subdir, file)
             temp_filepath = os.path.join(subdir, "temp_" + file)
 
             print(
-                f"\033[0;32mChecking\033[0m ({current_movie} of {total_movies}): {filepath}",
+                f"\033[0;32mChecking:\033[0m ({CURRENT_MOVIE} of {total_movies}): {filepath}",
                 flush=True,
             )
 
             try:
                 result = subprocess.run(
-                    ["mkvmerge", "-J", filepath], capture_output=True, text=True
+                    ["mkvmerge", "-J", filepath], capture_output=True, text=True, check=True
                 )
 
                 if result.returncode != 0:
@@ -133,18 +138,18 @@ for subdir, dirs, files in os.walk(base_dir):
 
                     mkvmerge_command = ["mkvmerge", "-o", temp_filepath]
                     if exclusion_ids["audio"]:
-                        excluded_audio = "!" + ",".join(exclusion_ids["audio"])
-                        mkvmerge_command.extend(["-a", excluded_audio])
+                        EXCLUDED_AUDIO = "!" + ",".join(exclusion_ids["audio"])
+                        mkvmerge_command.extend(["-a", EXCLUDED_AUDIO])
 
                     if exclusion_ids["subtitles"]:
-                        excluded_subtitles = "!" + ",".join(exclusion_ids["subtitles"])
-                        mkvmerge_command.extend(["-s", excluded_subtitles])
+                        EXCLUDED_SUBTITLES = "!" + ",".join(exclusion_ids["subtitles"])
+                        mkvmerge_command.extend(["-s", EXCLUDED_SUBTITLES])
 
                     mkvmerge_command.append(filepath)
 
                     with open(os.devnull, "wb") as null:
                         result = subprocess.run(
-                            mkvmerge_command, stdout=null, stderr=null
+                            mkvmerge_command, stdout=null, stderr=null, check=True
                         )
 
                     if result.returncode == 0:
@@ -164,11 +169,19 @@ for subdir, dirs, files in os.walk(base_dir):
                 print(f"Failed to decode JSON output for {filepath}: {e}", flush=True)
             except KeyError as e:
                 print(
-                    f"KeyError {e} when processing {filepath}, this file may have an unexpected structure.",
+                    f"KeyError {e} when processing {filepath}, "
+                    f"this file may have an unexpected structure.",
                     flush=True,
-                )
-            except Exception as e:
-                print(f"An unexpected error occurred for {filepath}: {e}", flush=True)
+)
+
+            except subprocess.CalledProcessError as e:
+                print(f"Subprocess execution failed for {filepath}: {e}", flush=True)
+            except OSError as e:
+                print(f"OS error occurred for {filepath}: {e}", flush=True)
+            except ValueError as e:
+                print(f"Value error: {e}", flush=True)
+# You can also catch any other specific exceptions you expect might happen.
+
 
 end_time = time.time()  # End the timer
 elapsed_time = end_time - start_time  # Calculate the elapsed time
