@@ -1,11 +1,8 @@
 import os
 import subprocess
 import time
+import orjson
 
-try:
-    import orjson
-except ImportError:
-    import json as orjson
 
 # Constants
 BASE_DIR = "/movies"
@@ -63,16 +60,33 @@ def get_exclusion_track_ids(data, languages, commentary):
 
     return exclusion_ids
 
+def count_movies(directory, extension=".mkv"):
+    """Count the number of movies with a particular extension in a directory."""
+    return sum(
+        1
+        for subdir, dirs, files in os.walk(directory)
+        for file in files
+        if file.endswith(extension)
+    )
+
+# Count the total number of movies
+total_movies = count_movies(BASE_DIR)
+
 # New structure to hold movie file paths for processing
 movies_to_process = []
-start_time = time.time()  # Start the timer
 
 # First Pass: Scan and Collect Movies
 print("First pass: Scanning for movies to process...", flush=True)
+CURRENT_MOVIE = 0
 for subdir, dirs, files in os.walk(BASE_DIR):
     for file in files:
         if file.endswith(".mkv"):
+            CURRENT_MOVIE += 1
             filepath = os.path.join(subdir, file)
+            print(
+                f"\033[0;32mChecking:\033[0m ({CURRENT_MOVIE} of {total_movies}): {filepath}",
+                flush=True,
+            )
 
             try:
                 result = subprocess.run(
@@ -102,19 +116,21 @@ for subdir, dirs, files in os.walk(BASE_DIR):
             except Exception as e:
                 print(f"Error occurred for {filepath}: {e}", flush=True)
 
-total_movies = len(movies_to_process)
-print(f"Found {total_movies} movies to process.", flush=True)
+print(f"Total movies scanned: {CURRENT_MOVIE}", flush=True)
+print(f"Found {len(movies_to_process)} movies to process.", flush=True)
 
 # Second Pass: Process the Collected Movies
 print("Second pass: Processing movies...", flush=True)
 CURRENT_MOVIE = 0
+
+start_time = time.time()  # Start the timer
 
 for filepath in movies_to_process:
     CURRENT_MOVIE += 1
     temp_filepath = os.path.join(os.path.dirname(filepath), "temp_" + os.path.basename(filepath))
 
     print(
-        f"\033[0;32mProcessing:\033[0m ({CURRENT_MOVIE} of {total_movies}): {filepath}",
+        f"\033[0;32mProcessing:\033[0m ({CURRENT_MOVIE} of {len(movies_to_process)}): {filepath}",
         flush=True,
     )
 
