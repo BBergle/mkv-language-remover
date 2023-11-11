@@ -26,13 +26,15 @@ def print_processing_message(filepath, current_count, total_count):
     """
     Prints a processing message for the current movie being processed.
     """
-    print(f"Processing movie {current_count + 1} out of {total_count}: {filepath}", flush=True)
+    print(f"\033[94mProcessing movie\033[0m {current_count + 1} out of {total_count}: {filepath}\n", flush=True)
 
 TOTAL_MOVIES = count_movies_to_process()
 
 # Check if test is True, if so, print the count and exit
 if TEST_ENV:
-    print(f"Total movies to be processed: {TOTAL_MOVIES}", flush=True)
+    print(f"The test variable is true, movies will not process.\n"
+        f"\033[93mTotal movies to be processed:\033[0m {TOTAL_MOVIES}", flush=True)
+
 else:
     MOVIE_COUNT = 0  # Initialize movie counter
     for path, _, file_list in os.walk(BASE_DIR):
@@ -54,16 +56,17 @@ else:
                     process.wait()
 
                     if process.returncode == 0:
-                        print(f"Successfully remuxed to: {temp_mkv_filepath}", flush=True)
+                        print(f"\033[92mSuccessfully remuxed to:\033[0m {temp_mkv_filepath}", flush=True)
                         os.remove(file_path)
                         final_mkv_filepath = os.path.join(path, base_file_name + NEW_EXTENSION)
                         os.rename(temp_mkv_filepath, final_mkv_filepath)
                         print(f"Renamed {temp_mkv_filepath} to {final_mkv_filepath}", flush=True)
                     else:
                         error_msg = process.stderr.read()
-                        print(f"Error remuxing {file_path}. Error message: {error_msg}", flush=True)
+                        print(f"\033[91mError remuxing\033[0m {file_path}. Error message: {error_msg}", flush=True)
+
 
                 MOVIE_COUNT += 1
                 if MOVIE_COUNT >= TOTAL_MOVIES:
-                    print("All movies processed!", flush=True)
+                    print("\033[92mAll movies processed!\033[0m", flush=True)
                     break
