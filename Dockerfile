@@ -14,7 +14,7 @@ ENV CONVERT=
 ENV REMOVE_LANGUAGES=
 ENV LANGUAGES=
 ENV REMOVE_COMMENTARY=
-ENV TEST= 
+ENV TEST=
 
 # Create a directory for the input folder and scripts
 RUN mkdir -p ${MOVIES_FOLDER}
