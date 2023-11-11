@@ -103,7 +103,7 @@ if TEST_ENV:
     print("\033[93mSkipping the second pass due to the test vairable being true.\033[0m", flush=True)
 else:
     # Second Pass: Process the Collected Movies
-    print("Second pass:\033[94m Processing movies...\033[0m", flush=True)
+    print("\033[94m Second pass:\033[0m Processing movies...", flush=True)
     CURRENT_MOVIE = 0
 
     start_time = time.time()  # Start the timer
