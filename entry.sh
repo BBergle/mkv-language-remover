@@ -6,7 +6,7 @@ printf "\033[0;32mStarting Container...\033[0m\n"
 printf "\033[0;32mUpgrading pip...\033[0m\n"
 pip install --upgrade pip
 printf "\033[0;32mInstalling dependencies from requirements.txt...\033[0m\n"
-pip install -r requirements.txt
+pip install orjson
 
 # Fetch the convert option from the environment variable
 CONVERT_ENV=$(printenv CONVERT)
