@@ -16,13 +16,15 @@ REMOVE_LANGUAGES_ENV=$(printenv REMOVE_LANGUAGES)
 # Function to execute Python script and capture errors
 run_python_script() {
     local script_name=$1
-    error=$(python3 "$script_name" 2>&1)
+    output=$(python3 "$script_name" 2>&1)
     exit_code=$?
 
     if [ $exit_code -ne 0 ]; then
-        printf "\033[0;31mPython script '$script_name' failed with the following error:\n$error\033[0m\n"
-        return $exit_code
+        printf "\033[0;31mPython script '$script_name' failed with the following error:\n$output\033[0m\n"
+    else
+        printf "\033[0;32mPython script '$script_name' output:\n$output\033[0m\n"
     fi
+    return $exit_code
 }
 
 # Check if CONVERT_ENV is set to 'True' (case-insensitive)
