@@ -14,8 +14,8 @@ excluded_languages = [lang.strip() for lang in EXCLUDED_LANGUAGES_ENV.split(",")
 remove_commentary = REMOVE_COMMENTARY_ENV.lower() == "true"
 
 # Output settings
-print(f"Excluded languages: \033[0;32m{', '.join(excluded_languages)}\n\033[0m", flush=True)
-print(f"Remove commentary tracks: \033[0;32m{remove_commentary}\n\033[0m", flush=True)
+print(f"Excluded languages: {', '.join(excluded_languages)}\n", flush=True)
+print(f"Remove commentary tracks: {remove_commentary}\n", flush=True)
 
 def get_exclusion_track_ids(data, languages, commentary):
     """
@@ -43,7 +43,7 @@ def count_movies(directory, extension=".mkv"):
     """Count the number of movies with a particular extension in a directory."""
     return sum(
         1
-        for files in os.walk(directory)
+        for subdir, dirs, files in os.walk(directory)
         for file in files
         if file.endswith(extension)
     )
@@ -103,7 +103,7 @@ if TEST_ENV:
     print("\033[93mSkipping the second pass due to the test vairable being true.\033[0m", flush=True)
 else:
     # Second Pass: Process the Collected Movies
-    print("\033[94m Second pass\033[0m:Processing movies...", flush=True)
+    print("Second pass:\033[94m Processing movies...\033[0m", flush=True)
     CURRENT_MOVIE = 0
 
     start_time = time.time()  # Start the timer
@@ -197,6 +197,6 @@ else:
     elapsed_seconds = int(elapsed_time % 60)
 
     print(
-        f"\033[92mFinished processing all movies.\033[0m Time taken: {elapsed_minutes} min and {elapsed_seconds} sec.",
+        f"\\033[92mFinished processing all movies.\\033[0m Time taken: {elapsed_minutes} min and {elapsed_seconds} sec.",
         flush=True,
 )
