@@ -9,7 +9,7 @@ SUPPORTED_FORMATS = ['.m2ts', '.mp4']  # Add or remove formats as needed
 NEW_EXTENSION = '.mkv'
 
 # New boolean variable
-TEST_ENV = os.getenv("TEST") # Set to True to only count movies without processing
+TEST_ENV = os.getenv("TEST", "") # Set to True to only count movies without processing
 
 def count_movies_to_process():
     """
