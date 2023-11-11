@@ -197,6 +197,6 @@ else:
     elapsed_seconds = int(elapsed_time % 60)
 
     print(
-        f"\033[92mFinished processing all movies.\033[0m Time taken: {elapsed_minutes} min and {elapsed_seconds} sec.",
+        f"\033[92mFinished processing all movies.\033[0m \nTime taken: {elapsed_minutes} min and {elapsed_seconds} sec.",
         flush=True,
 )
