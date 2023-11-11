@@ -6,41 +6,37 @@ This script processes movie files in a specified directory, converting them to M
 import os
 import subprocess
 
-# Constants
-BASE_DIR = '/movies'
-SUPPORTED_FORMATS = ['.m2ts', '.mp4']  # Add or remove formats as needed
-NEW_EXTENSION = '.mkv'
+# Set the base directory to the movies folder
+base_dir = '/movies'
+
+# Supported video formats for conversion
+supported_formats = ['.m2ts', '.mp4']  # Add or remove formats as needed
 
 def count_movies_to_process():
-    """
-    Counts the number of movies in the BASE_DIR that are in SUPPORTED_FORMATS.
-    """
     count = 0
-    for _, _, files in os.walk(BASE_DIR):
+    for _, _, files in os.walk(base_dir):
         for file_name in files:
-            if any(file_name.endswith(ext) for ext in SUPPORTED_FORMATS):
+            if any(file_name.endswith(ext) for ext in supported_formats):
                 count += 1
     return count
 
-def print_processing_message(filepath, current_count, total_count):
-    """
-    Prints a processing message for the current movie being processed.
-    """
-    print(f"Processing movie {current_count + 1} out of {total_count}: {filepath}", flush=True)
+def print_processing_message(filepath, movie_count, total_movies):
+    print(f"Processing movie {movie_count + 1} out of {total_movies}: {filepath}", flush=True)
 
-MOVIE_COUNT = 0  # Initialize movie counter
-TOTAL_MOVIES = count_movies_to_process()
+movie_count = 0  # Initialize movie counter
+total_movies = count_movies_to_process()
 
-for path, _, file_list in os.walk(BASE_DIR):
+for path, _, file_list in os.walk(base_dir):
     for file_name in file_list:
-        if any(file_name.endswith(ext) for ext in SUPPORTED_FORMATS):
+        if any(file_name.endswith(ext) for ext in supported_formats):
             file_path = os.path.join(path, file_name)
             base_file_name = os.path.splitext(file_name)[0]
-            temp_mkv_filepath = os.path.join(path, "temp_" + base_file_name + NEW_EXTENSION)
+            new_extension = '.mkv'
+            temp_mkv_filepath = os.path.join(path, "temp_" + base_file_name + new_extension)
 
             mkvmerge_command = ['mkvmerge', '-o', temp_mkv_filepath, file_path]
 
-            print_processing_message(file_path, MOVIE_COUNT, TOTAL_MOVIES)
+            print_processing_message(file_path, movie_count, total_movies)
 
             with subprocess.Popen(mkvmerge_command, stdout=subprocess.PIPE,
                                   stderr=subprocess.PIPE, text=True) as process:
@@ -52,14 +48,14 @@ for path, _, file_list in os.walk(BASE_DIR):
                 if process.returncode == 0:
                     print(f"Successfully remuxed to: {temp_mkv_filepath}", flush=True)
                     os.remove(file_path)
-                    final_mkv_filepath = os.path.join(path, base_file_name + NEW_EXTENSION)
+                    final_mkv_filepath = os.path.join(path, base_file_name + new_extension)
                     os.rename(temp_mkv_filepath, final_mkv_filepath)
                     print(f"Renamed {temp_mkv_filepath} to {final_mkv_filepath}", flush=True)
                 else:
                     error_msg = process.stderr.read()
                     print(f"Error remuxing {file_path}. Error message: {error_msg}", flush=True)
 
-            MOVIE_COUNT += 1
-            if MOVIE_COUNT >= TOTAL_MOVIES:
+            movie_count += 1
+            if movie_count >= total_movies:
                 print("All movies processed!", flush=True)
                 break
