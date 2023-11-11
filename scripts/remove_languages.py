@@ -4,6 +4,7 @@ It walks through a directory of movies, checks each MKV file,
 and removes tracks based on the configured exclusions.
 """
 # pylint: disable=redefined-outer-name
+# pylint: disable=too-many-locals
 import os
 import subprocess
 import time
