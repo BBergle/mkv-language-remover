@@ -15,9 +15,9 @@ def count_movies_to_process():
     Counts the number of movies in the BASE_DIR that are in SUPPORTED_FORMATS.
     """
     count = 0
-    for root_dir, _, files_list in os.walk(BASE_DIR):
-        for file_name in files_list:
-            if any(file_name.endswith(ext) for ext in SUPPORTED_FORMATS):
+    for dir_path, _, file_names in os.walk(BASE_DIR):
+        for file in file_names:
+            if any(file.endswith(ext) for ext in SUPPORTED_FORMATS):
                 count += 1
     return count
 
@@ -31,12 +31,12 @@ def print_processing_message(filepath, current_count, total_count):
 MOVIE_COUNT = 0  # Initialize movie counter
 TOTAL_MOVIES = count_movies_to_process()
 
-for root_dir, _, files_list in os.walk(BASE_DIR):
-    for file_name in files_list:
-        if any(file_name.endswith(ext) for ext in SUPPORTED_FORMATS):
-            file_path = os.path.join(root_dir, file_name)
-            base_file_name = os.path.splitext(file_name)[0]
-            temp_mkv_filepath = os.path.join(root_dir, "temp_" + base_file_name + NEW_EXTENSION)
+for dir_path, _, file_names in os.walk(BASE_DIR):
+    for file in file_names:
+        if any(file.endswith(ext) for ext in SUPPORTED_FORMATS):
+            file_path = os.path.join(dir_path, file)
+            base_file_name = os.path.splitext(file)[0]
+            temp_mkv_filepath = os.path.join(dir_path, "temp_" + base_file_name + NEW_EXTENSION)
 
             mkvmerge_command = ['mkvmerge', '-o', temp_mkv_filepath, file_path]
 
@@ -52,7 +52,7 @@ for root_dir, _, files_list in os.walk(BASE_DIR):
                 if process.returncode == 0:
                     print(f"Successfully remuxed to: {temp_mkv_filepath}", flush=True)
                     os.remove(file_path)
-                    final_mkv_filepath = os.path.join(root_dir, base_file_name + NEW_EXTENSION)
+                    final_mkv_filepath = os.path.join(dir_path, base_file_name + NEW_EXTENSION)
                     os.rename(temp_mkv_filepath, final_mkv_filepath)
                     print(f"Renamed {temp_mkv_filepath} to {final_mkv_filepath}", flush=True)
                 else:
