@@ -99,7 +99,7 @@ for subdir, dirs, files in os.walk(BASE_DIR):
             temp_filepath = os.path.join(subdir, "temp_" + file)
 
             print(
-                f"\033[0;32mChecking\033[0m ({CURRENT_MOVIE} of {total_movies}): {filepath}",
+                f"\033[0;32mChecking:\033[0m ({CURRENT_MOVIE} of {total_movies}): {filepath}",
                 flush=True,
             )
 
