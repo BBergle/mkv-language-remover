@@ -180,7 +180,6 @@ for subdir, dirs, files in os.walk(BASE_DIR):
                 print(f"OS error occurred for {filepath}: {e}", flush=True)
             except ValueError as e:
                 print(f"Value error: {e}", flush=True)
-# You can also catch any other specific exceptions you expect might happen.
 
 
 end_time = time.time()  # End the timer
