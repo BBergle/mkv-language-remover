@@ -7,6 +7,7 @@ import orjson
 BASE_DIR = "/movies"
 EXCLUDED_LANGUAGES_ENV = os.getenv("LANGUAGES", "")
 REMOVE_COMMENTARY_ENV = os.getenv("REMOVE_COMMENTARY", "False")
+REMOVE_SUBTITLES_ENV = os.getenv("REMOVE_SUBTITLES", "False")
 TEST_ENV = os.getenv("TEST") == "True"
 
 # Process environment variables
@@ -14,20 +15,23 @@ excluded_languages = [
     lang.strip() for lang in EXCLUDED_LANGUAGES_ENV.split(",") if lang.strip()
 ]
 remove_commentary = REMOVE_COMMENTARY_ENV.lower() == "true"
+remove_subtitles = REMOVE_SUBTITLES_ENV.lower() != "false"
 
 # Output settings
 print(f"Excluded languages: {', '.join(excluded_languages)}\n", flush=True)
 print(f"Remove commentary tracks: {remove_commentary}\n", flush=True)
+print(f"Remove subtitles: {remove_subtitles}\n", flush=True)
 
 
-def get_exclusion_track_ids(data, languages, commentary):
+def get_exclusion_track_ids(data, languages, commentary, subtitles):
     """
     Identify track IDs for exclusion based on language and commentary settings.
-    Keep subtitles if corresponding audio track is not present.
+    Keep subtitles if corresponding audio track is not present and if REMOVE_SUBTITLES is not False.
 
     :param data: MKV file metadata.
     :param languages: List of languages to exclude.
     :param commentary: Boolean indicating whether to remove commentary tracks.
+    :param subtitles: Boolean indicating whether to remove subtitle tracks.
     :return: Dict with audio and subtitle track IDs to exclude.
     """
     exclusion_ids = {"audio": [], "subtitles": []}
@@ -50,8 +54,11 @@ def get_exclusion_track_ids(data, languages, commentary):
             ):
                 exclusion_ids[track_type].append(track_id)
         elif track_type == "subtitles":
-            # Exclude subtitle track only if the language is in the exclusion list and there's a corresponding audio track
-            if track_language in languages and track_language in audio_languages:
+            if (
+                subtitles
+                and track_language in languages
+                and track_language in audio_languages
+            ):
                 exclusion_ids[track_type].append(track_id)
 
     return exclusion_ids
@@ -108,7 +115,7 @@ for subdir, dirs, files in os.walk(BASE_DIR):
                     continue
 
                 exclusion_ids = get_exclusion_track_ids(
-                    data, excluded_languages, remove_commentary
+                    data, excluded_languages, remove_commentary, remove_subtitles
                 )
 
                 if exclusion_ids["audio"] or exclusion_ids["subtitles"]:
@@ -123,7 +130,7 @@ print(f"Found {len(movies_to_process)} movies to process.", flush=True)
 # Skip the second pass if TEST_ENV is True
 if TEST_ENV:
     print(
-        "\033[93mSkipping the second pass due to the test vairable being true.\033[0m",
+        "\033[93mSkipping the second pass due to the test variable being true.\033[0m",
         flush=True,
     )
 else:
@@ -159,24 +166,29 @@ else:
             data = orjson.loads(result.stdout)
 
             exclusion_ids = get_exclusion_track_ids(
-                data, excluded_languages, remove_commentary
+                data, excluded_languages, remove_commentary, remove_subtitles
             )
 
-            if exclusion_ids["audio"] or exclusion_ids["subtitles"]:
+            if exclusion_ids["audio"] or (
+                exclusion_ids["subtitles"] and remove_subtitles
+            ):
                 print(f"Processing file: {filepath}", flush=True)
 
                 for track_id in exclusion_ids["audio"]:
                     print(f"Removing audio track number {track_id}...", flush=True)
 
-                for track_id in exclusion_ids["subtitles"]:
-                    print(f"Removing subtitle track number {track_id}...", flush=True)
+                if remove_subtitles:
+                    for track_id in exclusion_ids["subtitles"]:
+                        print(
+                            f"Removing subtitle track number {track_id}...", flush=True
+                        )
 
                 mkvmerge_command = ["mkvmerge", "-o", temp_filepath]
                 if exclusion_ids["audio"]:
                     EXCLUDED_AUDIO = "!" + ",".join(exclusion_ids["audio"])
                     mkvmerge_command.extend(["-a", EXCLUDED_AUDIO])
 
-                if exclusion_ids["subtitles"]:
+                if exclusion_ids["subtitles"] and remove_subtitles:
                     EXCLUDED_SUBTITLES = "!" + ",".join(exclusion_ids["subtitles"])
                     mkvmerge_command.extend(["-s", EXCLUDED_SUBTITLES])
 
