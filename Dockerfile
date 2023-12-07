@@ -16,6 +16,7 @@ ENV LANGUAGES=
 ENV REMOVE_COMMENTARY=
 ENV TEST=
 ENV REMOVE_SUBTITLES=
+ENV TOTAL_MOVIES_TO_PROCESS_ENV=
 
 # Create a directory for the input folder and scripts
 RUN mkdir -p ${MOVIES_FOLDER}

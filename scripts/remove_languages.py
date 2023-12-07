@@ -9,6 +9,7 @@ EXCLUDED_LANGUAGES_ENV = os.getenv("LANGUAGES", "")
 REMOVE_COMMENTARY_ENV = os.getenv("REMOVE_COMMENTARY", "False")
 REMOVE_SUBTITLES_ENV = os.getenv("REMOVE_SUBTITLES", "False")
 TEST_ENV = os.getenv("TEST") == "True"
+TOTAL_MOVIES_TO_PROCESS_ENV = os.getenv("TOTAL_MOVIES_TO_PROCESS")
 
 # Process environment variables
 excluded_languages = [
@@ -16,6 +17,13 @@ excluded_languages = [
 ]
 remove_commentary = REMOVE_COMMENTARY_ENV.lower() == "true"
 remove_subtitles = REMOVE_SUBTITLES_ENV.lower() != "false"
+try:
+    total_movies_to_process = int(TOTAL_MOVIES_TO_PROCESS_ENV)
+    if total_movies_to_process == -1:
+        total_movies_to_process = None
+except (ValueError, TypeError):
+    print("Invalid value for TOTAL_MOVIES_TO_PROCESS. Processing all movies.")
+    total_movies_to_process = None
 
 # Output settings
 print(f"Excluded languages: {', '.join(excluded_languages)}\n", flush=True)
@@ -136,18 +144,25 @@ if TEST_ENV:
 else:
     # Second Pass: Process the Collected Movies
     print("\033[94m Second pass:\033[0m Processing movies...", flush=True)
-    CURRENT_MOVIE = 0
+    PROCESSED_MOVIES = 0
 
     start_time = time.time()  # Start the timer
 
     for filepath in movies_to_process:
-        CURRENT_MOVIE += 1
+        if (
+            total_movies_to_process is not None
+            and PROCESSED_MOVIES >= total_movies_to_process
+        ):
+            print(f"Reached the limit of {total_movies_to_process} movies to process.")
+            break
+
+        PROCESSED_MOVIES += 1
         temp_filepath = os.path.join(
             os.path.dirname(filepath), "temp_" + os.path.basename(filepath)
         )
 
         print(
-            f"\033[0;32mProcessing:\033[0m ({CURRENT_MOVIE} of {len(movies_to_process)}): {filepath}",
+            f"\033[0;32mProcessing:\033[0m ({PROCESSED_MOVIES} of {len(movies_to_process)}): {filepath}",
             flush=True,
         )
 
