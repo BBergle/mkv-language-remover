@@ -10,16 +10,20 @@ REMOVE_COMMENTARY_ENV = os.getenv("REMOVE_COMMENTARY", "False")
 TEST_ENV = os.getenv("TEST") == "True"
 
 # Process environment variables
-excluded_languages = [lang.strip() for lang in EXCLUDED_LANGUAGES_ENV.split(",") if lang.strip()]
+excluded_languages = [
+    lang.strip() for lang in EXCLUDED_LANGUAGES_ENV.split(",") if lang.strip()
+]
 remove_commentary = REMOVE_COMMENTARY_ENV.lower() == "true"
 
 # Output settings
 print(f"Excluded languages: {', '.join(excluded_languages)}\n", flush=True)
 print(f"Remove commentary tracks: {remove_commentary}\n", flush=True)
 
+
 def get_exclusion_track_ids(data, languages, commentary):
     """
     Identify track IDs for exclusion based on language and commentary settings.
+    Keep subtitles if corresponding audio track is not present.
 
     :param data: MKV file metadata.
     :param languages: List of languages to exclude.
@@ -27,17 +31,31 @@ def get_exclusion_track_ids(data, languages, commentary):
     :return: Dict with audio and subtitle track IDs to exclude.
     """
     exclusion_ids = {"audio": [], "subtitles": []}
+    audio_languages = set()
+
+    # First, collect languages of all audio tracks
+    for track in data.get("tracks", []):
+        if track["type"] == "audio":
+            audio_languages.add(track["properties"].get("language", "").lower())
+
+    # Then, determine which tracks to exclude based on the new criteria
     for track in data.get("tracks", []):
         track_id, track_type = str(track["id"]), track["type"]
         track_language = track["properties"].get("language", "").lower()
         track_name = track["properties"].get("track_name", "").lower()
 
-        if track_type == "audio" and (track_language in languages or (commentary and "commentary" in track_name)):
-            exclusion_ids[track_type].append(track_id)
-        elif track_type == "subtitles" and track_language in languages:
-            exclusion_ids[track_type].append(track_id)
+        if track_type == "audio":
+            if track_language in languages or (
+                commentary and "commentary" in track_name
+            ):
+                exclusion_ids[track_type].append(track_id)
+        elif track_type == "subtitles":
+            # Exclude subtitle track only if the language is in the exclusion list and there's a corresponding audio track
+            if track_language in languages and track_language in audio_languages:
+                exclusion_ids[track_type].append(track_id)
 
     return exclusion_ids
+
 
 def count_movies(directory, extension=".mkv"):
     """Count the number of movies with a particular extension in a directory."""
@@ -47,6 +65,7 @@ def count_movies(directory, extension=".mkv"):
         for file in files
         if file.endswith(extension)
     )
+
 
 # Count the total number of movies
 total_movies = count_movies(BASE_DIR)
@@ -69,7 +88,10 @@ for subdir, dirs, files in os.walk(BASE_DIR):
 
             try:
                 result = subprocess.run(
-                    ["mkvmerge", "-J", filepath], capture_output=True, text=True, check=True
+                    ["mkvmerge", "-J", filepath],
+                    capture_output=True,
+                    text=True,
+                    check=True,
                 )
 
                 if result.returncode != 0:
@@ -100,7 +122,10 @@ print(f"Found {len(movies_to_process)} movies to process.", flush=True)
 
 # Skip the second pass if TEST_ENV is True
 if TEST_ENV:
-    print("\033[93mSkipping the second pass due to the test vairable being true.\033[0m", flush=True)
+    print(
+        "\033[93mSkipping the second pass due to the test vairable being true.\033[0m",
+        flush=True,
+    )
 else:
     # Second Pass: Process the Collected Movies
     print("\033[94m Second pass:\033[0m Processing movies...", flush=True)
@@ -110,7 +135,9 @@ else:
 
     for filepath in movies_to_process:
         CURRENT_MOVIE += 1
-        temp_filepath = os.path.join(os.path.dirname(filepath), "temp_" + os.path.basename(filepath))
+        temp_filepath = os.path.join(
+            os.path.dirname(filepath), "temp_" + os.path.basename(filepath)
+        )
 
         print(
             f"\033[0;32mProcessing:\033[0m ({CURRENT_MOVIE} of {len(movies_to_process)}): {filepath}",
@@ -142,9 +169,7 @@ else:
                     print(f"Removing audio track number {track_id}...", flush=True)
 
                 for track_id in exclusion_ids["subtitles"]:
-                    print(
-                        f"Removing subtitle track number {track_id}...", flush=True
-                    )
+                    print(f"Removing subtitle track number {track_id}...", flush=True)
 
                 mkvmerge_command = ["mkvmerge", "-o", temp_filepath]
                 if exclusion_ids["audio"]:
@@ -199,4 +224,4 @@ else:
     print(
         f"\033[92mFinished processing all movies.\033[0m \nTime taken: {elapsed_minutes} min and {elapsed_seconds} sec.",
         flush=True,
-)
+    )
