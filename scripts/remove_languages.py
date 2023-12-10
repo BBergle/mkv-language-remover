@@ -30,7 +30,6 @@ print(f"Excluded languages: {', '.join(excluded_languages)}\n", flush=True)
 print(f"Remove commentary tracks: {remove_commentary}\n", flush=True)
 print(f"Remove subtitles: {remove_subtitles}\n", flush=True)
 
-
 def get_exclusion_track_ids(data, languages, commentary, subtitles):
     """
     Identify track IDs for exclusion based on language and commentary settings.
@@ -71,7 +70,6 @@ def get_exclusion_track_ids(data, languages, commentary, subtitles):
 
     return exclusion_ids
 
-
 def count_movies(directory, extension=".mkv"):
     """Count the number of movies with a particular extension in a directory."""
     return sum(
@@ -80,7 +78,6 @@ def count_movies(directory, extension=".mkv"):
         for file in files
         if file.endswith(extension)
     )
-
 
 # Count the total number of movies
 total_movies = count_movies(BASE_DIR)
@@ -100,6 +97,10 @@ for subdir, dirs, files in os.walk(BASE_DIR):
                 f"\033[0;32mChecking:\033[0m ({CURRENT_MOVIE} of {total_movies}): {filepath}",
                 flush=True,
             )
+
+            if total_movies_to_process is not None and CURRENT_MOVIE > total_movies_to_process:
+                print(f"Reached the limit of {total_movies_to_process} movies to process.")
+                break  # Break out of the inner loop
 
             try:
                 result = subprocess.run(
@@ -149,10 +150,7 @@ else:
     start_time = time.time()  # Start the timer
 
     for filepath in movies_to_process:
-        if (
-            total_movies_to_process is not None
-            and PROCESSED_MOVIES >= total_movies_to_process
-        ):
+        if total_movies_to_process is not None and PROCESSED_MOVIES >= total_movies_to_process:
             print(f"Reached the limit of {total_movies_to_process} movies to process.")
             break
 
