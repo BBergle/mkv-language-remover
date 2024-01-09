@@ -33,7 +33,7 @@ print(f"Remove subtitles: {remove_subtitles}\n", flush=True)
 def get_exclusion_track_ids(data, languages, commentary, subtitles):
     """
     Identify track IDs for exclusion based on language and commentary settings.
-    Keep subtitles if corresponding audio track is not present and if REMOVE_SUBTITLES is not False.
+    Keep at least one audio track if it's the only one in the desired language.
 
     :param data: MKV file metadata.
     :param languages: List of languages to exclude.
@@ -42,31 +42,27 @@ def get_exclusion_track_ids(data, languages, commentary, subtitles):
     :return: Dict with audio and subtitle track IDs to exclude.
     """
     exclusion_ids = {"audio": [], "subtitles": []}
-    audio_languages = set()
+    audio_tracks = [track for track in data.get("tracks", []) if track["type"] == "audio"]
+    subtitle_tracks = [track for track in data.get("tracks", []) if track["type"] == "subtitles"]
 
-    # First, collect languages of all audio tracks
-    for track in data.get("tracks", []):
-        if track["type"] == "audio":
-            audio_languages.add(track["properties"].get("language", "").lower())
+    # Check if there's only one audio track and it's in a non-excluded language
+    if len(audio_tracks) == 1 and audio_tracks[0]["properties"].get("language", "").lower() not in languages:
+        return exclusion_ids  # Do not exclude any tracks
 
-    # Then, determine which tracks to exclude based on the new criteria
-    for track in data.get("tracks", []):
-        track_id, track_type = str(track["id"]), track["type"]
-        track_language = track["properties"].get("language", "").lower()
+    # Exclude audio tracks based on language and commentary
+    for track in audio_tracks:
+        track_id, track_language = str(track["id"]), track["properties"].get("language", "").lower()
         track_name = track["properties"].get("track_name", "").lower()
 
-        if track_type == "audio":
-            if track_language in languages or (
-                commentary and "commentary" in track_name
-            ):
-                exclusion_ids[track_type].append(track_id)
-        elif track_type == "subtitles":
-            if (
-                subtitles
-                and track_language in languages
-                and track_language in audio_languages
-            ):
-                exclusion_ids[track_type].append(track_id)
+        if track_language in languages or (commentary and "commentary" in track_name):
+            exclusion_ids["audio"].append(track_id)
+
+    # Exclude subtitle tracks based on settings
+    for track in subtitle_tracks:
+        track_id, track_language = str(track["id"]), track["properties"].get("language", "").lower()
+
+        if subtitles and track_language in languages and track_language in [t["properties"].get("language", "").lower() for t in audio_tracks]:
+            exclusion_ids["subtitles"].append(track_id)
 
     return exclusion_ids
 
